@@ -1,13 +1,29 @@
-from django.shortcuts import render
+from django.db import models
+from django.db.models import Q, ExpressionWrapper, BooleanField
+from django.utils import timezone
+from rest_framework import viewsets
+from django_filters import rest_framework as django_filters
+from rest_framework.filters import OrderingFilter
 
-"""
-TODO:
-- [POST] /exams : 시험 생성. admin only.
-- [GET] /exams : 시험 리스트 조회. admin only.
-- [PUT] /exams/{id} : 시험 수정. admin only.
-- [GET] /exams/{id} : 시험 디테일 조회. admin only.
-- [DELETE] /exams/{id} : 시험 삭제. admin only.
-- [POST] /exams/slots : 시험 슬롯 생성. admin only.
-- [GET] /exams/slots : 시험 슬롯 목록 조회. 예약 가능여부로 필터링 기능. 페이지네이션. 
-"""
+from project.pagination import CustomPagination
+from project.permissions import IsAdminOrReadOnly
+from .models import Exam
+from .serializers import ExamSlotSerializer
 
+
+class ExamSlotViewSet(viewsets.ModelViewSet):
+    queryset = Exam.objects.all()
+    serializer_class = ExamSlotSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [django_filters.DjangoFilterBackend, OrderingFilter]
+    ordering_fields = ['start_time']
+    ordering = ['start_time']
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        queryset = self.queryset.filter(start_time__gt=timezone.now() + timezone.timedelta(hours=3))
+        queryset = queryset.annotate(
+            full_capacity=ExpressionWrapper(Q(capacity__gt=models.F('reservation_count')), output_field=BooleanField())
+        )
+        queryset = queryset.filter(full_capacity=True)
+        return queryset

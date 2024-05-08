@@ -1,4 +1,3 @@
-from django.http import Http404
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,36 +6,16 @@ from project import config
 from users.models import User
 from users.serializers import UserSerializer
 import jwt
-import datetime
+from rest_framework.authtoken.models import Token
 
 
 class UserRegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
-class UserDetailView(APIView):
-
-    def get_object(self, pk):
-        try:
-            return User.objects.get(pk=pk)
-        except User.DoesNotExist:
-            raise Http404
-
-    def get(self, request):
-        token = request.COOKIES.get(config.JWT_COOKIE_KEY)
-        if not token:
-            raise AuthenticationFailed('Unauthenticated')
-        try:
-            payload = jwt.decode(token, config.SECRET_KEY, config.HASH_ALGORITHM)
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Unauthenticated')
-        user = self.get_object(pk=payload['id'])
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
+        user = serializer.save()
+        token = Token.objects.get(user=user).key
+        return Response({**serializer.data, "token": token})
 
 
 class LoginView(APIView):
@@ -46,6 +25,7 @@ class LoginView(APIView):
         password = request.data['password']
 
         user = User.objects.filter(email=email).first()
+        token = Token.objects.get(user=user).key
 
         if user is None:
             raise AuthenticationFailed('User not found')
@@ -53,21 +33,7 @@ class LoginView(APIView):
         if not user.check_password(password):
             raise AuthenticationFailed('Wrong password')
 
-        utcnow = datetime.datetime.utcnow()
-        payload = {
-            'id': user.id,
-            'exp': utcnow + datetime.timedelta(minutes=60),
-            'iat': utcnow
-        }
-
-        token = jwt.encode(payload, config.SECRET_KEY, algorithm=config.HASH_ALGORITHM)
-
-        response = Response()
-        response.set_cookie(key=config.JWT_COOKIE_KEY, value=token, httponly=True)
-        response.data = {
-            'jwt': token
-        }
-        return response
+        return Response({"token": token})
 
 
 class LogoutView(APIView):
