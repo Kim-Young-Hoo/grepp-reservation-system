@@ -1,1 +1,3 @@
 .idea/
+/templates/admin/
+/templates/rest_framework/
