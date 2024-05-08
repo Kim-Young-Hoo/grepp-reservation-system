@@ -96,7 +96,7 @@ DATABASES = {
         'NAME': 'reservation_system',
         'USER': 'postgres',
         'PASSWORD': '1234',
-        'HOST': 'localhost',  # Or use the Docker service name if Django is also in Docker
+        'HOST': 'db',
         'PORT': '5432',
     }
 }
