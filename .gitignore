@@ -2,3 +2,4 @@
 templates/admin/
 templates/rest_framework/
 venv/
+*.pyc
