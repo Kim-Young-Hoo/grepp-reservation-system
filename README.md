@@ -1,6 +1,9 @@
 # grepp-reservation-system
 
 ---
+# <그렙 사전 과제 - 시험 예약 시스템>
+- 개발자 : 김영후
+
 # 로컬 환경 구동 방법
 ### docker 설치 되었을 경우 (권장)
 1. git repository clone
@@ -210,4 +213,7 @@ User.objects.create_user(email={email}, password={password})
 - [DELETE] /api/exams/{int:exam_id}/reservations/{int:reservation_id}/ : 유저의 예약 삭제.
   - response : 없음 (status 204 no content)
 - [PATCH] /api/exams/{int:exam_id}/reservations/{int:reservation_id}/ : 예약 확정 (admin only)
-  - 
+  
+
+---
+부족하지만 읽어주셔서 감사드립니다.
