@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam List</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h2>Exam List</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Exam Title</th>
+                <th>Reserved</th>
+                <th>Confirmed</th>
+            </tr>
+        </thead>
+        <tbody id="examList"></tbody>
+    </table>
+    <div id="paginationButtons"></div>
+    <button id="createExamButton" style="display: none;" onclick="redirectToExamCreate()">Create an Exam</button>
+
+    <script>
+        // Retrieve the token from localStorage
+        var token = localStorage.getItem("token");
+        var isStaff = localStorage.getItem("is_staff");
+
+        // Function to fetch exams
+        function fetchExams(url) {
+            fetch(url, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Token " + token,
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.results.length > 0) {
+                    var examListHTML = "";
+                    data.results.forEach(exam => {
+                        examListHTML += `
+                            <tr>
+                                <td><a href='/frontend/exam-detail?id=${exam.id}'>${exam.title}</a></td>
+                                <td>${exam.is_reserved ? "Yes" : "No"}</td>
+                                <td>${exam.is_confirmed ? "Yes" : "No"}</td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById("examList").innerHTML = examListHTML;
+
+                    // Handle pagination buttons
+                    var paginationButtonsHTML = "";
+                    if (data.previous) {
+                        paginationButtonsHTML += "<button onclick=\"fetchExams('" + data.previous + "')\">Previous</button>";
+                    }
+                    if (data.next) {
+                        paginationButtonsHTML += "<button onclick=\"fetchExams('" + data.next + "')\">Next</button>";
+                    }
+                    document.getElementById("paginationButtons").innerHTML = paginationButtonsHTML;
+
+                    if (isStaff === "true") {
+                        document.getElementById("createExamButton").style.display = "block";
+                    }
+
+                } else {
+                    document.getElementById("examList").innerHTML = "<tr><td colspan='3'>No exams available.</td></tr>";
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching exams:", error);
+                document.getElementById("examList").innerHTML = "<tr><td colspan='3'>Failed to fetch exams.</td></tr>";
+            });
+        }
+
+        function redirectToExamCreate() {
+            window.location.href = "/frontend/exam-create";
+        }
+
+
+        // Initial fetch for exams
+        fetchExams("http://localhost:8000/api/exams");
+    </script>
+</body>
+</html>

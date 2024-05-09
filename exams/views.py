@@ -8,22 +8,24 @@ from rest_framework.filters import OrderingFilter
 from project.pagination import CustomPagination
 from project.permissions import IsAdminOrReadOnly
 from .models import Exam
-from .serializers import ExamSlotSerializer
+from .serializers import ExamSerializer
 
 
-class ExamSlotViewSet(viewsets.ModelViewSet):
+class ExamViewSet(viewsets.ModelViewSet):
     queryset = Exam.objects.all()
-    serializer_class = ExamSlotSerializer
+    serializer_class = ExamSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = [django_filters.DjangoFilterBackend, OrderingFilter]
-    ordering_fields = ['start_time']
-    ordering = ['start_time']
+    ordering_fields = ['-created_at']
+    ordering = ['-created_at']
     pagination_class = CustomPagination
 
     def get_queryset(self):
-        queryset = self.queryset.filter(start_time__gt=timezone.now() + timezone.timedelta(hours=3))
-        queryset = queryset.annotate(
-            full_capacity=ExpressionWrapper(Q(capacity__gt=models.F('reservation_count')), output_field=BooleanField())
-        )
-        queryset = queryset.filter(full_capacity=True)
+        queryset = self.queryset
+        if not self.request.user.is_staff:
+            queryset = self.queryset.filter(start_time__gt=timezone.now() + timezone.timedelta(hours=3))
+            queryset = queryset.annotate(
+                full_capacity=ExpressionWrapper(Q(capacity__gt=models.F('reservation_count')), output_field=BooleanField())
+            )
+            queryset = queryset.filter(full_capacity=True)
         return queryset

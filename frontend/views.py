@@ -9,3 +9,19 @@ class IndexPage(TemplateView):
 
 class SignUpPage(TemplateView):
     template_name = 'signup.html'
+
+
+class ExamPage(TemplateView):
+    template_name = 'exam.html'
+
+
+class ExamDetailPage(TemplateView):
+    template_name = 'exam-detail.html'
+
+
+class AdminPage(TemplateView):
+    template_name = 'admin.html'
+
+
+class ExamCreatePage(TemplateView):
+    template_name = 'exam-create.html'

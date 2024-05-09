@@ -5,7 +5,6 @@ from rest_framework.views import APIView
 from project import config
 from users.models import User
 from users.serializers import UserSerializer
-import jwt
 from rest_framework.authtoken.models import Token
 
 
@@ -33,14 +32,4 @@ class LoginView(APIView):
         if not user.check_password(password):
             raise AuthenticationFailed('Wrong password')
 
-        return Response({"token": token})
-
-
-class LogoutView(APIView):
-    def post(self, request):
-        response = Response()
-        response.delete_cookie(config.JWT_COOKIE_KEY)
-        response.data = {
-            'message': 'success'
-        }
-        return response
+        return Response({"token": token, "is_staff": user.is_staff})

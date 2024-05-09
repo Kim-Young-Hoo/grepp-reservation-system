@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Detail</title>
+</head>
+<body>
+    <h2>Exam Detail</h2>
+    <div id="examDetail"></div>
+    <p id="reservationMessage"></p>
+    <button id="reservationButton">Make a Reservation</button>
+
+
+    <div id="reservationSection" style="display: none;">
+        <h3>Reservations</h3>
+        <table id="reservationTable">
+            <thead>
+                <tr>
+                    <th>Reservation ID</th>
+                    <th>Confirmed</th>
+                    <th>Created At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="reservationList"></tbody>
+        </table>
+    </div>
+
+    <script>
+        // Retrieve the token from localStorage
+        var token = localStorage.getItem("token");
+
+        // Check if the user is staff
+        var isStaff = localStorage.getItem("is_staff");
+        if (isStaff === "true") {
+            document.getElementById("reservationSection").style.display = "block";
+        }
+
+        document.getElementById("reservationButton").addEventListener("click", function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var examId = urlParams.get('id');
+            fetch("http://localhost:8000/api/exams/" + examId + "/reservations/", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Token " + token,
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json().then(data => ({ status: response.status, body: data })))
+            .then(result => {
+                if (result.status === 201) {
+                    document.getElementById("reservationMessage").innerHTML = "예약 되었습니다.";
+                } else {
+                    document.getElementById("reservationMessage").innerHTML = result.body[0]
+                }
+            })
+            .catch(error => {
+                console.error("Error making reservation:", error);
+                document.getElementById("reservationMessage").innerHTML = "Failed to make a reservation.";
+            });
+        });
+
+
+
+        // Function to fetch exam detail
+        function fetchExamDetail() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var examId = urlParams.get('id');
+
+            fetch("http://localhost:8000/api/exams/" + examId, {
+                method: "GET",
+                headers: {
+                    "Authorization": "Token " + token,
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                var examDetailHTML = `
+                    <p><strong>Title:</strong> ${data.title}</p>
+                    <p><strong>Description:</strong> ${data.description}</p>
+                    <p><strong>Start Time:</strong> ${data.start_time}</p>
+                    <p><strong>Reservation Count:</strong> ${data.reservation_count} / ${data.capacity}</p>
+                `;
+                document.getElementById("examDetail").innerHTML = examDetailHTML;
+            })
+            .catch(error => {
+                console.error("Error fetching exam detail:", error);
+                document.getElementById("examDetail").innerHTML = "<p>Failed to fetch exam detail.</p>";
+            });
+        }
+
+        // Function to fetch reservations
+        function fetchReservations() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var examId = urlParams.get('id');
+
+            fetch("http://localhost:8000/api/exams/" + examId + "/reservations", {
+                method: "GET",
+                headers: {
+                    "Authorization": "Token " + token,
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.results.length > 0) {
+                    var reservationListHTML = "";
+                    data.results.forEach(reservation => {
+                        reservationListHTML += `
+                            <tr>
+                                <td>${reservation.id}</td>
+                                <td>${reservation.is_confirmed ? "Yes" : "No"}</td>
+                                <td>${reservation.created_at}</td>
+                                <td><button onclick="confirmReservation(${examId}, ${reservation.id})">Confirm</button></td>
+                            </tr>
+                        `;
+                    });
+                    document.getElementById("reservationList").innerHTML = reservationListHTML;
+                } else {
+                    document.getElementById("reservationList").innerHTML = "<tr><td colspan='4'>No reservations found.</td></tr>";
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching reservations:", error);
+                document.getElementById("reservationList").innerHTML = "<tr><td colspan='4'>Failed to fetch reservations.</td></tr>";
+            });
+        }
+
+        // Function to confirm reservation (for staff users)
+        function confirmReservation(examId, reservationId) {
+            fetch("http://localhost:8000/api/exams/" + examId + "/reservations/" + reservationId + "/", {
+                method: "PATCH",
+                headers: {
+                    "Authorization": "Token " + token,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ "is_confirmed": true })
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert("Reservation confirmed successfully.");
+                    // Refresh reservation list after confirmation
+                    fetchReservations();
+                } else {
+                    alert("Failed to confirm reservation.");
+                }
+            })
+            .catch(error => {
+                console.error("Error confirming reservation:", error);
+                alert("An error occurred while confirming reservation.");
+            });
+        }
+
+        // Fetch data
+        fetchExamDetail();
+        if (isStaff === "true") {
+            fetchReservations();
+        }
+    </script>
+</body>
+</html>

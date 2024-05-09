@@ -34,10 +34,10 @@
                 if (xhr.readyState === 4) {
                     if (xhr.status === 200) {
                         var response = JSON.parse(xhr.responseText);
-                        var token = response.jwt;
-                        // You can store the token in localStorage or sessionStorage for future use
-                        // For example: localStorage.setItem("token", token);
-                        document.getElementById("message").innerHTML = "Login successful!";
+                        var token = response.token; // Get the token from the response
+                        localStorage.setItem("token", token);
+                        localStorage.setItem("is_staff", response.is_staff);
+                        window.location.href = "/frontend/exam";
                     } else {
                         document.getElementById("message").innerHTML = "Login failed. Please check your credentials.";
                     }
